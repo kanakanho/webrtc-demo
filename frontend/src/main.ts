@@ -52,10 +52,16 @@ pc.ontrack = (event) => {
   });
 };
 
+const baseURL = import.meta.env.VITE_SIGNARING_URL
+
 // シグナリング用の簡易API
 async function postSignal(data: { sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }) {
   console.log("[postSignal] send", data);
-  const res = await fetch("http://localhost:8084/api/signal", {
+  if (!baseURL) {
+    console.error("[postSignal] baseURL is not set");
+    return;
+  }
+  const res = await fetch(`${baseURL}/api/signal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
