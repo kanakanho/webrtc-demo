@@ -1,0 +1,45 @@
+services:
+  postgres:
+    container_name: ${POSTGRES_CONTAINER_HOST}
+    image: postgres:15
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    networks:
+      - webrtc-demo-go-networks
+    healthcheck:
+      test: "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    container_name: ${GO_CONTAINER_HOST}
+    hostname: ${GO_HOST}
+    tty: true
+    env_file: .env
+    build:
+      context: .
+      dockerfile: ./docker/go/Dockerfile
+    volumes:
+      - ./src:/go/src/app
+      - ./docker/go/log:/go/src/log
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 8084:8000
+    networks:
+      - webrtc-demo-go-networks
+    restart: always
+
+networks:
+  webrtc-demo-go-networks:
+    driver: bridge
